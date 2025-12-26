@@ -54,3 +54,16 @@ PROJECT_MIRRORS_FILE="$BUILD_DIR/scripts/projectsmirrors.json"
 if [ -f "$PROJECT_MIRRORS_FILE" ]; then
     sed -i '/.cn\//d; /tencent/d; /aliyun/d' "$PROJECT_MIRRORS_FILE"
 fi
+
+cd $BUILD_DIR
+
+# 1. 添加专门的插件 feeds (以常用的 passwall 仓库为例)
+echo "src-git passwall_packages https://github.com/xiaorouji/openwrt-passwall-packages.git;main" >> feeds.conf.default
+
+# 2. 更新并安装 feeds，这样编译系统才能“看见”这些新插件
+./scripts/feeds update -a
+./scripts/feeds install -a
+
+# 3. 修正 .config 中的配置名
+# 如果你想确保用的是该仓库的版本，建议在 .config 里改回
+# CONFIG_PACKAGE_luci-app-passwall=y
