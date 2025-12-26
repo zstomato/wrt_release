@@ -55,15 +55,23 @@ if [ -f "$PROJECT_MIRRORS_FILE" ]; then
     sed -i '/.cn\//d; /tencent/d; /aliyun/d' "$PROJECT_MIRRORS_FILE"
 fi
 
+# ... 脚本前面部分保持不变 ...
+
 cd $BUILD_DIR
 
-# 1. 添加专门的插件 feeds (以常用的 passwall 仓库为例)
-echo "src-git passwall_packages https://github.com/xiaorouji/openwrt-passwall-packages.git;main" >> feeds.conf.default
+# 1. 添加 kenzok8 的插件源
+# small-package 是同步源码，small 是核心组件，通常两个都加比较稳妥
+echo "src-git small8 https://github.com/kenzok8/small-package.git;main" >> feeds.conf.default
+echo "src-git kenzo https://github.com/kenzok8/openwrt-packages.git;main" >> feeds.conf.default
 
-# 2. 更新并安装 feeds，这样编译系统才能“看见”这些新插件
+# 2. 更新 feeds
 ./scripts/feeds update -a
-./scripts/feeds install -a
 
-# 3. 修正 .config 中的配置名
-# 如果你想确保用的是该仓库的版本，建议在 .config 里改回
-# CONFIG_PACKAGE_luci-app-passwall=y
+# 3. 【关键】删除源码自带的同名插件，防止由于重复定义的报错
+# 这样系统会优先使用 kenzok8 仓库里的最新版本
+rm -rf feeds/luci/applications/luci-app-passwall
+rm -rf feeds/luci/applications/luci-app-mosdns
+rm -rf feeds/packages/net/mosdns
+
+# 4. 安装 feeds
+./scripts/feeds install -a
