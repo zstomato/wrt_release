@@ -59,19 +59,25 @@ fi
 
 cd $BUILD_DIR
 
-# 1. 添加 kenzok8 的插件源
-# small-package 是同步源码，small 是核心组件，通常两个都加比较稳妥
-echo "src-git small8 https://github.com/kenzok8/small-package.git;main" >> feeds.conf.default
-echo "src-git kenzo https://github.com/kenzok8/openwrt-packages.git;main" >> feeds.conf.default
+# 1. 确保 feeds.conf.default 存在
+[ -f feeds.conf.default ] || touch feeds.conf.default
 
-# 2. 更新 feeds
+# 2. 添加插件源 (使用强力覆盖模式)
+# 先删除可能存在的重复定义
+sed -i '/kenzo/d' feeds.conf.default
+sed -i '/small/d' feeds.conf.default
+
+echo "src-git kenzo https://github.com/kenzok8/openwrt-packages.git;main" >> feeds.conf.default
+echo "src-git small https://github.com/kenzok8/small-package.git;main" >> feeds.conf.default
+
+# 3. 更新 feeds (这是创建 feeds/kenzo 目录的步骤)
 ./scripts/feeds update -a
 
-# 3. 【关键】删除源码自带的同名插件，防止由于重复定义的报错
-# 这样系统会优先使用 kenzok8 仓库里的最新版本
-rm -rf feeds/luci/applications/luci-app-passwall
-rm -rf feeds/luci/applications/luci-app-mosdns
-rm -rf feeds/packages/net/mosdns
+# 4. 【关键修正】在安装前删除冲突包
+# 使用判断语句防止 "No such file or directory" 错误
+[ -d "feeds/luci/applications/luci-app-passwall" ] && rm -rf feeds/luci/applications/luci-app-passwall
+[ -d "feeds/luci/applications/luci-app-mosdns" ] && rm -rf feeds/luci/applications/luci-app-mosdns
+[ -d "feeds/packages/net/mosdns" ] && rm -rf feeds/packages/net/mosdns
 
-# 4. 安装 feeds
+# 5. 安装全部插件
 ./scripts/feeds install -a
